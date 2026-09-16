@@ -145,3 +145,13 @@ textarea:focus, button:focus-visible { outline: 2px solid var(--coral); outline-
   .total { min-width: 0; }
   .card-head { flex-direction: column; }
 }
+
+.meter { flex: 1; min-width: 80px; max-width: 200px; height: 8px; background: var(--line); border-radius: 4px; overflow: hidden; }
+.meter > div { height: 100%; background: var(--ok); transition: width .08s linear; }
+.mic-select { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); margin: 4px 0; }
+.mic-select select { font: inherit; font-size: 14px; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; max-width: 100%; min-width: 0; flex: 1; }
+.playback-row { margin: 6px 0; }
+.playback { width: 100%; max-width: 420px; height: 40px; }
+.notice { background: var(--coral-soft); color: var(--coral); padding: 10px 12px; border-radius: 10px; font-size: 14px; margin: 0 0 12px; }
+.done-btn.on { background: var(--ok) !important; border-color: var(--ok) !important; color: #fff; }
+.pager { gap: 8px; flex-wrap: wrap; }

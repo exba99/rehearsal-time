@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { mkdir, writeFile } from "node:fs/promises";
+import path from "node:path";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -25,6 +27,18 @@ export async function POST(req: Request) {
   }
 
   const name = (file as File).name || extFor(file.type);
+  console.log(`[transcribe] received ${name} · ${file.type || "no type"} · ${(file.size / 1024).toFixed(0)} KB`);
+
+  // Dev only: keep the last recording on disk to diagnose audio problems.
+  if (process.env.NODE_ENV !== "production") {
+    try {
+      const dir = path.join(process.cwd(), ".debug");
+      await mkdir(dir, { recursive: true });
+      await writeFile(path.join(dir, `last-${name}`), Buffer.from(await file.arrayBuffer()));
+    } catch {
+      /* best effort */
+    }
+  }
   const form = new FormData();
   form.append("file", file, name);
   form.append("model", "whisper-large-v3-turbo");
@@ -43,6 +57,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: `Transcription failed (${res.status}).`, detail: detail.slice(0, 500) }, { status: 502 });
   }
   const data = (await res.json()) as { text?: string };
+  console.log(`[transcribe] ${data.text?.length ?? 0} chars`);
   return NextResponse.json({ text: (data.text ?? "").trim() });
 }
 

@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { fileNameFor, fmt, useRecorder } from "@/lib/useRecorder";
+import { fileNameFor, fmt, recordingBlocker, useRecorder, type RecordingResult } from "@/lib/useRecorder";
 import { Feedback } from "./Feedback";
 
 type Props = {
@@ -12,10 +12,9 @@ type Props = {
   /** changes whenever the segment/question changes, to reset the panel */
   resetKey: string | number;
   onRecorded?: (seconds: number) => void;
-  onFeedback?: () => void;
 };
 
-export function PracticePanel({ mode, reference, title, anchors, budgetSeconds, resetKey, onRecorded, onFeedback }: Props) {
+export function PracticePanel({ mode, reference, title, anchors, budgetSeconds, resetKey, onRecorded }: Props) {
   const rec = useRecorder();
   const [transcript, setTranscript] = useState("");
   const [seconds, setSeconds] = useState<number | null>(null);
@@ -23,6 +22,9 @@ export function PracticePanel({ mode, reference, title, anchors, budgetSeconds, 
   const [loading, setLoading] = useState(false);
   const [feedback, setFeedback] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [blocker, setBlocker] = useState<string | null>(null);
+
+  useEffect(() => setBlocker(recordingBlocker()), []);
 
   useEffect(() => {
     rec.reset();
@@ -33,9 +35,17 @@ export function PracticePanel({ mode, reference, title, anchors, budgetSeconds, 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resetKey]);
 
-  async function transcribe(blob: Blob, secs: number) {
+  async function transcribe({ blob, seconds: secs, peak }: RecordingResult) {
     setSeconds(secs);
     onRecorded?.(secs);
+    if (peak < 0.01) {
+      setError("Your recording is silent — the microphone isn't picking up your voice. Check the selected microphone and your system input volume, then record again.");
+      return;
+    }
+    if (secs < 1) {
+      setError("Recording too short. Hold on a bit longer before pressing Stop.");
+      return;
+    }
     setTranscribing(true);
     setError(null);
     try {
@@ -61,20 +71,11 @@ export function PracticePanel({ mode, reference, title, anchors, budgetSeconds, 
       const res = await fetch("/api/feedback", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          mode,
-          reference,
-          transcript,
-          elapsedSeconds: seconds,
-          budgetSeconds: budgetSeconds ?? null,
-          anchors,
-          title,
-        }),
+        body: JSON.stringify({ mode, reference, transcript, elapsedSeconds: seconds, budgetSeconds: budgetSeconds ?? null, anchors, title }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Feedback failed.");
+      if (!res.ok) throw new Error([data.error, data.detail].filter(Boolean).join(" — ") || "Feedback failed.");
       setFeedback(data.feedback);
-      onFeedback?.();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Feedback failed.");
     } finally {
@@ -88,22 +89,46 @@ export function PracticePanel({ mode, reference, title, anchors, budgetSeconds, 
 
   return (
     <div className="practice">
+      {blocker && <p className="notice">{blocker}</p>}
       <div className="recorder">
         <button
+          type="button"
           className={`rec-btn ${recording ? "is-recording" : ""}`}
           onClick={() => (recording ? rec.stop() : rec.start(transcribe))}
-          disabled={rec.state === "requesting" || transcribing}
+          disabled={rec.state === "requesting" || transcribing || !!blocker}
           aria-pressed={recording}
         >
           <span className="dot" aria-hidden />
           {recording ? "Stop" : rec.state === "requesting" ? "Allow mic…" : seconds !== null ? "Record again" : "Record"}
         </button>
-        <div className={`clock ${over ? "over" : ""}`} aria-live="off">
+        <div className={`clock ${over ? "over" : ""}`}>
           {fmt(shown)}
           {budgetSeconds ? <span className="budget"> / {fmt(budgetSeconds)}</span> : null}
         </div>
-        {rec.audio && !recording && <audio controls src={rec.audio.url} className="playback" />}
+        {recording && (
+          <div className="meter" aria-label="Microphone level">
+            <div style={{ width: `${Math.round(rec.level * 100)}%` }} />
+          </div>
+        )}
       </div>
+
+      {rec.devices.length > 1 && !recording && (
+        <label className="mic-select">
+          <span>Microphone</span>
+          <select value={rec.deviceId} onChange={(e) => rec.setDeviceId(e.target.value)}>
+            <option value="">System default</option>
+            {rec.devices.map((d, i) => (
+              <option key={d.deviceId} value={d.deviceId}>{d.label || `Microphone ${i + 1}`}</option>
+            ))}
+          </select>
+        </label>
+      )}
+
+      {rec.audio && !recording && (
+        <div className="playback-row">
+          <audio controls playsInline src={rec.audio.url} className="playback" />
+        </div>
+      )}
       {rec.error && <p className="error">{rec.error}</p>}
 
       <label className="field-label" htmlFor={`t-${mode}`}>
@@ -119,7 +144,7 @@ export function PracticePanel({ mode, reference, title, anchors, budgetSeconds, 
       />
 
       <div className="actions">
-        <button className="primary" onClick={getFeedback} disabled={!transcript.trim() || loading || transcribing || recording}>
+        <button type="button" className="primary" onClick={getFeedback} disabled={!transcript.trim() || loading || transcribing || recording}>
           {loading ? "Thinking…" : "Get feedback"}
         </button>
       </div>

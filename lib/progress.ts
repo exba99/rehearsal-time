@@ -2,7 +2,7 @@
 
 export type Progress = Record<number, { practiced: boolean; lastSeconds?: number; attempts: number }>;
 
-const KEY = "rehearsal-time:progress:v1";
+const KEY = "rehearsal-time:progress:v2"; // v2: "practiced" is only set by the user
 
 export function loadProgress(): Progress {
   try {

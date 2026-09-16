@@ -131,13 +131,20 @@ export default function Home() {
               anchors={seg.anchors}
               budgetSeconds={seg.budget}
               resetKey={seg.id}
-              onRecorded={(secs) => update(seg.id, { practiced: true, lastSeconds: Math.round(secs), attempts: (progress[seg.id]?.attempts ?? 0) + 1 })}
-              onFeedback={() => update(seg.id, { practiced: true })}
+              onRecorded={(secs) => update(seg.id, { lastSeconds: Math.round(secs), attempts: (progress[seg.id]?.attempts ?? 0) + 1 })}
             />
 
             <div className="pager">
-              <button disabled={seg.id === 1} onClick={() => setActiveId(seg.id - 1)}>← Previous</button>
-              <button disabled={seg.id === 17} onClick={() => setActiveId(seg.id + 1)}>Next →</button>
+              <button type="button" disabled={seg.id === 1} onClick={() => setActiveId(seg.id - 1)}>← Previous</button>
+              <button
+                type="button"
+                className={`done-btn ${progress[seg.id]?.practiced ? "on" : ""}`}
+                aria-pressed={!!progress[seg.id]?.practiced}
+                onClick={() => update(seg.id, { practiced: !progress[seg.id]?.practiced })}
+              >
+                {progress[seg.id]?.practiced ? "✓ Practiced" : "Mark as practiced"}
+              </button>
+              <button type="button" disabled={seg.id === 17} onClick={() => setActiveId(seg.id + 1)}>Next →</button>
             </div>
           </main>
         </div>

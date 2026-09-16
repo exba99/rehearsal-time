@@ -23,7 +23,7 @@ Ouvrir http://localhost:3000.
 ## Utiliser sur iPhone, depuis n'importe quel réseau
 1. Installer **Tailscale** sur le Mac et sur l'iPhone, connecté au même compte.
 2. Console Tailscale → **DNS** : activer *MagicDNS* et *HTTPS Certificates*.
-3. Sur le Mac : `tailscale serve --bg 3000`
+3. Sur le Mac : lancer l'app en mode production, plus rapide et sans blocage côté téléphone : `caffeinate -i npm run phone`, puis dans un autre terminal `tailscale serve --bg 3000`
 4. Sur l'iPhone (Tailscale activé) : ouvrir l'URL affichée, `https://<nom-du-mac>.<tailnet>.ts.net`. L'app n'est visible que par tes appareils.
 
 Arrêter le partage : `tailscale serve --https=443 off`.
