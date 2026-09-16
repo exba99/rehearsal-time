@@ -10,13 +10,23 @@ Le prototype Artifact ne pouvait pas utiliser le micro (iframe sandboxée) et re
 - **Q&A Practice** — tirage aléatoire parmi 16 questions, même flux, feedback sur la pertinence et la structure en 3 temps (reconnaître / expliquer avec un chiffre / ouvrir).
 - Saisie manuelle toujours possible si le micro est refusé.
 
-## Lancer en local
+## Lancer en local (feedback via ton abonnement Claude)
+Prérequis sur le Mac : Node 20+, et Claude Code connecté à ton abonnement (`npm i -g @anthropic-ai/claude-code`, puis `claude` → `/login`).
+
 ```bash
 npm install
-cp .env.example .env.local   # puis renseigner ANTHROPIC_API_KEY et GROQ_API_KEY
-npm run dev
+cp .env.example .env.local   # renseigner GROQ_API_KEY ; FEEDBACK_PROVIDER=subscription
+caffeinate -i npm run dev    # caffeinate empêche le Mac de se mettre en veille
 ```
-Ouvrir http://localhost:3000. Le micro exige HTTPS sauf sur `localhost` — pour tester sur iPhone, utiliser le déploiement Vercel.
+Ouvrir http://localhost:3000.
 
-## Déploiement
-Push sur `main` → déploiement automatique Vercel. Les clés sont définies dans *Project Settings → Environment Variables*, jamais dans le code.
+## Utiliser sur iPhone, depuis n'importe quel réseau
+1. Installer **Tailscale** sur le Mac et sur l'iPhone, connecté au même compte.
+2. Console Tailscale → **DNS** : activer *MagicDNS* et *HTTPS Certificates*.
+3. Sur le Mac : `tailscale serve --bg 3000`
+4. Sur l'iPhone (Tailscale activé) : ouvrir l'URL affichée, `https://<nom-du-mac>.<tailnet>.ts.net`. L'app n'est visible que par tes appareils.
+
+Arrêter le partage : `tailscale serve --https=443 off`.
+
+## Déploiement Vercel (optionnel, payant)
+Le mode abonnement ne fonctionne qu'en local. Sur Vercel : `FEEDBACK_PROVIDER=api`, `ANTHROPIC_API_KEY`, `GROQ_API_KEY` dans *Environment Variables*. Push sur `main` → déploiement automatique.

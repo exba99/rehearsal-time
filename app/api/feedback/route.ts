@@ -1,9 +1,9 @@
-import Anthropic from "@anthropic-ai/sdk";
 import { NextResponse } from "next/server";
 import { QA_SYSTEM, SCRIPT_SYSTEM } from "@/lib/prompts";
+import { generateFeedback } from "@/lib/claude";
 
 export const runtime = "nodejs";
-export const maxDuration = 60;
+export const maxDuration = 120;
 
 type Body = {
   mode: "script" | "qa";
@@ -16,9 +16,6 @@ type Body = {
 };
 
 export async function POST(req: Request) {
-  if (!process.env.ANTHROPIC_API_KEY) {
-    return NextResponse.json({ error: "ANTHROPIC_API_KEY is not configured on the server." }, { status: 500 });
-  }
   let body: Body;
   try {
     body = await req.json();
@@ -44,14 +41,7 @@ export async function POST(req: Request) {
       : `QUESTION:\n${reference}\n\nTRANSCRIPT OF HER ANSWER:\n${transcript}\n\nELAPSED TIME: ${timeLine}\nWORDS SPOKEN: ${words} — PACE: ${pace}`;
 
   try {
-    const client = new Anthropic();
-    const msg = await client.messages.create({
-      model: process.env.ANTHROPIC_MODEL || "claude-sonnet-4-5",
-      max_tokens: 1200,
-      system: mode === "script" ? SCRIPT_SYSTEM : QA_SYSTEM,
-      messages: [{ role: "user", content: userContent }],
-    });
-    const text = msg.content.map((b) => (b.type === "text" ? b.text : "")).join("").trim();
+    const text = await generateFeedback(mode === "script" ? SCRIPT_SYSTEM : QA_SYSTEM, userContent);
     return NextResponse.json({ feedback: text });
   } catch (e) {
     const message = e instanceof Error ? e.message : "Unknown error";
