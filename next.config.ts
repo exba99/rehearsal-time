@@ -4,6 +4,6 @@ const nextConfig: NextConfig = {
   serverExternalPackages: ["@anthropic-ai/claude-agent-sdk"],
   // In `next dev`, pages opened from another host (phone via Tailscale or LAN IP)
   // must be allowed, otherwise the page loads but buttons stay dead (no JS).
-  allowedDevOrigins: ["*.ts.net", "192.168.*.*", "10.*.*.*", "100.*.*.*"],
+  allowedDevOrigins: ["*.trycloudflare.com", "*.ts.net", "192.168.*.*", "10.*.*.*", "100.*.*.*"],
 };
 export default nextConfig;

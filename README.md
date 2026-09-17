@@ -6,7 +6,7 @@ Outil personnel pour répéter **à voix haute** une présentation scientifique 
 Le prototype Artifact ne pouvait pas utiliser le micro (iframe sandboxée) et reposait sur `SpeechRecognition`, absent de Safari. Cette version est une vraie page web : l'audio est capturé avec `MediaRecorder` (supporté partout, iPhone compris), transcrit côté serveur par Whisper (Groq), puis évalué par Claude.
 
 ## Fonctionnalités
-- **Full Speech** — 17 segments, texte de référence (masquable), mots-ancres, budget de temps, enregistrement + chrono, transcription éditable, feedback. Segments cochés et temps conservés dans le navigateur ; total cumulé affiché face à 12:00.
+- **Full Speech** — 18 segments, texte de référence (masquable), mots-ancres, budget de temps, enregistrement + chrono, transcription éditable, feedback. Segments cochés et temps conservés dans le navigateur ; total cumulé affiché face à 12:00.
 - **Q&A Practice** — tirage aléatoire parmi 16 questions, même flux, feedback sur la pertinence et la structure en 3 temps (reconnaître / expliquer avec un chiffre / ouvrir).
 - Saisie manuelle toujours possible si le micro est refusé.
 
@@ -20,13 +20,15 @@ caffeinate -i npm run dev    # caffeinate empêche le Mac de se mettre en veille
 ```
 Ouvrir http://localhost:3000.
 
-## Utiliser sur iPhone, depuis n'importe quel réseau
-1. Installer **Tailscale** sur le Mac et sur l'iPhone, connecté au même compte.
-2. Console Tailscale → **DNS** : activer *MagicDNS* et *HTTPS Certificates*.
-3. Sur le Mac : lancer l'app en mode production, plus rapide et sans blocage côté téléphone : `caffeinate -i npm run phone`, puis dans un autre terminal `tailscale serve --bg 3000`
-4. Sur l'iPhone (Tailscale activé) : ouvrir l'URL affichée, `https://<nom-du-mac>.<tailnet>.ts.net`. L'app n'est visible que par tes appareils.
+## Utiliser sur iPhone, depuis n'importe quel réseau (Cloudflare Tunnel)
+Rien à installer sur l'iPhone. Sur le Mac, une seule fois : `brew install cloudflared`.
 
-Arrêter le partage : `tailscale serve --https=443 off`.
+1. Dans `.env.local`, définir `APP_PASSWORD=` (le lien est public : ce mot de passe protège ton crédit Claude et ta clé Groq).
+2. Terminal 1 : `caffeinate -i npm run phone`
+3. Terminal 2 : `cloudflared tunnel --url http://localhost:3000`
+4. Ouvrir sur l'iPhone l'adresse `https://…trycloudflare.com` affichée, puis saisir le mot de passe (nom d'utilisateur libre).
+
+L'adresse change à chaque lancement de `cloudflared`. Ctrl+C dans le terminal 2 coupe l'accès public.
 
 ## Déploiement Vercel (optionnel, payant)
 Le mode abonnement ne fonctionne qu'en local. Sur Vercel : `FEEDBACK_PROVIDER=api`, `ANTHROPIC_API_KEY`, `GROQ_API_KEY` dans *Environment Variables*. Push sur `main` → déploiement automatique.

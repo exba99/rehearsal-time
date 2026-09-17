@@ -1,9 +1,26 @@
 import { Fragment, type ReactNode } from "react";
+import { SpeakButton } from "./SpeakButton";
 
-function inline(text: string): ReactNode[] {
+function bold(text: string, key: string): ReactNode[] {
   return text.split(/(\*\*[^*]+\*\*)/g).map((part, i) =>
-    part.startsWith("**") && part.endsWith("**") ? <strong key={i}>{part.slice(2, -2)}</strong> : <Fragment key={i}>{part}</Fragment>
+    part.startsWith("**") && part.endsWith("**") ? <strong key={`${key}-${i}`}>{part.slice(2, -2)}</strong> : <Fragment key={`${key}-${i}`}>{part}</Fragment>
   );
+}
+
+/** `{{English text}}` becomes a playable chip with the correct pronunciation. */
+function inline(text: string): ReactNode[] {
+  return text.split(/(\{\{[^}]+\}\})/g).flatMap((part, i): ReactNode[] => {
+    const m = part.match(/^\{\{([^}]+)\}\}$/);
+    if (!m) return bold(part, String(i));
+    const say = m[1].trim();
+    const long = say.split(/\s+/).length > 12;
+    return [
+      <span key={`s-${i}`} className={`say ${long ? "say-long" : ""}`}>
+        <span className="say-text">{say}</span>
+        <SpeakButton text={say} rate={say.split(/\s+/).length <= 3 ? 0.75 : 0.9} />
+      </span>,
+    ];
+  });
 }
 
 export function Feedback({ text }: { text: string }) {

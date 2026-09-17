@@ -3,10 +3,12 @@ import { useEffect, useMemo, useState } from "react";
 import segmentsData from "@/lib/segments.json";
 import questionsData from "@/lib/questions.json";
 import { PracticePanel } from "@/components/PracticePanel";
+import { SpeakButton } from "@/components/SpeakButton";
+import { VoicePicker } from "@/components/VoicePicker";
 import { loadProgress, saveProgress, type Progress } from "@/lib/progress";
 import { fmt } from "@/lib/useRecorder";
 
-type Segment = { id: number; title: string; budget: number; script: string; anchors: string[] };
+type Segment = { id: number; title: string; budget: number; script: string; anchors: string[]; note?: string; fullReadSeconds?: number };
 const segments = segmentsData as Segment[];
 const questions = questionsData as string[];
 const TARGET = 12 * 60;
@@ -69,17 +71,20 @@ export default function Home() {
         </div>
       </header>
 
+      <div className="toolbar">
       <nav className="tabs" role="tablist">
         <button role="tab" aria-selected={tab === "speech"} onClick={() => setTab("speech")}>Full Speech</button>
         <button role="tab" aria-selected={tab === "qa"} onClick={() => setTab("qa")}>Q&amp;A Practice</button>
       </nav>
+        <VoicePicker />
+      </div>
 
       {tab === "speech" ? (
         <div className="speech">
           <aside className={`sidebar ${navOpen ? "open" : ""}`}>
             <button className="nav-toggle" onClick={() => setNavOpen((o) => !o)} aria-expanded={navOpen}>
               <span>{seg.id}. {seg.title}</span>
-              <span className="muted">{doneCount}/17 ▾</span>
+              <span className="muted">{doneCount}/{segments.length} ▾</span>
             </button>
             <ol className="seg-list">
               {segments.map((s) => {
@@ -101,7 +106,7 @@ export default function Home() {
               })}
             </ol>
             <div className="side-foot">
-              <span className="muted">{doneCount} of 17 practiced</span>
+              <span className="muted">{doneCount} of {segments.length} practiced</span>
               <button className="link" onClick={resetProgress}>Reset</button>
             </div>
           </aside>
@@ -109,19 +114,23 @@ export default function Home() {
           <main className="card main-card">
             <div className="card-head">
               <div>
-                <p className="eyebrow">Segment {seg.id} of 17 · budget {fmt(seg.budget)}</p>
+                <p className="eyebrow">Segment {seg.id} of {segments.length} · budget {fmt(seg.budget)}</p>
                 <h2>{seg.title}</h2>
               </div>
+              <div className="head-tools">
+              <SpeakButton text={seg.script} label="Listen" />
               <label className="switch">
                 <input type="checkbox" checked={hideScript} onChange={(e) => setHideScript(e.target.checked)} />
                 Hide script
               </label>
+              </div>
             </div>
 
             <div className="chips">
               {seg.anchors.map((a) => <span key={a} className="chip">{a}</span>)}
             </div>
 
+            {seg.note && <p className="seg-note">{seg.note}</p>}
             {!hideScript && <p className="script">{seg.script}</p>}
 
             <PracticePanel
@@ -144,7 +153,7 @@ export default function Home() {
               >
                 {progress[seg.id]?.practiced ? "✓ Practiced" : "Mark as practiced"}
               </button>
-              <button type="button" disabled={seg.id === 17} onClick={() => setActiveId(seg.id + 1)}>Next →</button>
+              <button type="button" disabled={seg.id === segments.length} onClick={() => setActiveId(seg.id + 1)}>Next →</button>
             </div>
           </main>
         </div>
@@ -161,7 +170,10 @@ export default function Home() {
             <p className="muted empty">Draw a question, take a breath, then answer out loud. Aim for 30–75 seconds.</p>
           ) : (
             <>
-              <blockquote className="question">{questions[qIndex]}</blockquote>
+              <blockquote className="question">
+                {questions[qIndex]}
+                <SpeakButton text={questions[qIndex]} label="Hear it" className="q-speak" />
+              </blockquote>
               <PracticePanel mode="qa" reference={questions[qIndex]} resetKey={`q${qDraw}`} />
             </>
           )}
